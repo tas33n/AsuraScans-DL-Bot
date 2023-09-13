@@ -1,6 +1,6 @@
 <p align="center">
   <a href="https://github.com/tas33n/AsuraScans-DL-Bot">
-    <img src="[images/image1.png](https://asuracomics.com/wp-content/uploads/2023/07/cropped-cropped-Group_1-1-270x270.png)" alt="Logo" width="85" height="85">
+    <img src="https://asuracomics.com/wp-content/uploads/2023/07/cropped-cropped-Group_1-1-270x270.png" alt="Logo" width="85" height="85">
   </a>
 
   <h3 align="center">AsuraScans (Asuracomics) Manhwa– Downloader</h3>
@@ -14,10 +14,7 @@
     <a href="https://github.com/tas33n/AsuraScans-DL-Bot/issues/new?assignees=riimuru&labels=enhancement&template=feature-request.md">Feature request</a>
   </p>
   <p align="center">
-     <a href="https://github.com/tas33n/AsuraScans-DL-Bot/actions/workflows/codeql-analysis.yml">
-      <img src="https://github.com/tas33n/AsuraScans-DL-Bot/actions/workflows/codeql-analysis.yml/badge.svg" alt="stars">
-    </a>
-    <a href="https://github.com/tas33n/AsuraScans-DL-Bot">
+        <a href="https://github.com/tas33n/AsuraScans-DL-Bot">
       <img src="https://img.shields.io/github/stars/tas33n/AsuraScans-DL-Bot" alt="stars">
     </a>
         <a href="https://github.com/consumet/extensions/blob/master/LICENSE">
