@@ -30,7 +30,7 @@ app.listen(PORT, () => {
 
 //_______________________________________________________________
 
-const bot = new Telegraf('6043015816:AAEWuCk_omHvrFKvS6o1kaBDKQVU4OB1lYs');
+const bot = new Telegraf('BOT_TOKEN');
 
 bot.start((ctx) => {
   ctx.reply('Welcome to the Image to PDF bot! Please send me the URL of the images you want to convert to PDF.');
