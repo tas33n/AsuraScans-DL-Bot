@@ -41,10 +41,10 @@ npm start #or yarn start
 ```
 Now the server is running on http://localhost:3000
 
-### Railway
+### Repl.it
 Host your own instance of the api on railway using the button below.
 
-[![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/new/template/Lg6DEp?referralCode=dv4TuD)
+[![Run on Repl.it](https://repl.it/badge/github/tas33n/AsuraScans-DL-Bot)](https://repl.it/github/tas33n/AsuraScans-DL-Bot)
 
 ## Contributing
 1. [Fork the repository](https://github.com/tas33n/AsuraScans-DL-Bot)

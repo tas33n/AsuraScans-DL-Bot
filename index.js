@@ -41,9 +41,32 @@ bot.on('text', async (ctx) => {
   }
 
   try {
+    // Show a "downloading, please wait" message
+    const downloadingMessage = await ctx.reply('Downloading, please wait...', {
+      reply_to_message_id: ctx.message.message_id,
+    });
+
     // Scrape images and create PDF
     const folderName = await scrapeImages(url);
+
+    // Update the message to indicate that image downloading is complete
+    await ctx.telegram.editMessageText(
+      downloadingMessage.chat.id,
+      downloadingMessage.message_id,
+      null,
+      'Image downloading complete. Generating PDF...'
+    );
+
     const pdfPath = await createPdfFromImages(folderName);
+
+    // Update the message to indicate that PDF generation is complete
+    await ctx.telegram.editMessageText(
+      downloadingMessage.chat.id,
+      downloadingMessage.message_id,
+      null,
+      'PDF generation complete. Sending document...'
+    );
+
 
     console.log(pdfPath);
 
@@ -51,6 +74,17 @@ bot.on('text', async (ctx) => {
     const pdfFileName = path.basename(pdfPath);
     ctx.replyWithDocument({ source: pdfPath }, { filename: pdfFileName })
       .then(() => {
+        // Update the message to indicate that the document is ready for download
+        ctx.telegram.editMessageText(
+          downloadingMessage.chat.id,
+          downloadingMessage.message_id,
+          null,
+          'Document file ready for download. Cleaning up...'
+        );
+        // Delete the "Document file ready for download" message after 5 seconds
+        setTimeout(async () => {
+          await ctx.telegram.deleteMessage(readyMessage.chat.id, readyMessage.message_id);
+        }, 5000);
         // File sent successfully, now clean up
         cleanup(folderName, pdfPath);
       })
