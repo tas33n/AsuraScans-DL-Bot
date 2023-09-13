@@ -6,7 +6,7 @@ const { PDFDocument, rgb } = require('pdf-lib');
 const sharp = require('sharp');
 const path = require('path');
 
-const bot = new Telegraf('6043015816:AAEWuCk_omHvrFKvS6o1kaBDKQVU4OB1lYs');
+const bot = new Telegraf('<BOT_TOKEN>');
 const currentTime = new Date().toLocaleTimeString();
 console.log(`Bot started at ${currentTime}`);
 
