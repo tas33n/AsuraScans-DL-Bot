@@ -5,31 +5,10 @@ const fs = require('fs');
 const { PDFDocument, rgb } = require('pdf-lib');
 const sharp = require('sharp');
 const path = require('path');
-const express = require("express");
-const app = express();
-const PORT = 3000;
 
-
-// To track bot's uptime
-const startTime = Date.now();
-
-app.get("/uptime", (req, res) => {
-  const currentTime = Date.now();
-  const uptimeMilliseconds = currentTime - startTime;
-  const uptimeSeconds = Math.floor(uptimeMilliseconds / 1000);
-
-  // Returning JSON data
-  res.json({
-    uptime: `${uptimeSeconds} seconds`,
-  });
-});
-
-app.listen(PORT, () => {
-  console.log(`Server is running on http://localhost:${PORT}`);
-});
-
-
-const bot = new Telegraf('BOT_TOKEN');
+const bot = new Telegraf('<BOT_TOKEN>');
+const currentTime = new Date().toLocaleTimeString();
+console.log(`Bot started at ${currentTime}`);
 
 bot.start((ctx) => {
   ctx.reply('Welcome to the Image to PDF bot! Please send me the URL of the images you want to convert to PDF.');
@@ -44,7 +23,6 @@ bot.help((ctx) => {
     '/help - Show this help message\n'
   );
 });
-
 
 
 bot.on('text', async (ctx) => {
@@ -101,13 +79,12 @@ bot.on('text', async (ctx) => {
           downloadingMessage.chat.id,
           downloadingMessage.message_id,
           null,
-          'Document file ready for download.'
+          'Document file ready for download. Cleaning up...'
         );
         // Delete the "Document file ready for download" message after 5 seconds
-        // setTimeout(async () => {
-        //   await ctx.telegram.deleteMessage(readyMessage.chat.id, readyMessage.message_id);
-        // }, 3000);
-
+        setTimeout(async () => {
+          await ctx.telegram.deleteMessage(readyMessage.chat.id, readyMessage.message_id);
+        }, 5000);
         // File sent successfully, now clean up
         cleanup(folderName, pdfPath);
       })
@@ -238,5 +215,3 @@ async function cleanup(folderName, pdfPath) {
     console.error('Cleanup error:', error);
   }
 }
-
-
