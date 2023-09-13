@@ -9,9 +9,9 @@
     <samp>A simple bot to download Manhwa Chapters as PDF from <a href="https://https://asuracomics.com/">AsuraScans/Asuracomics</a></samp>
     <br />
     <br />
-    <a href="https://github.com/tas33n/AsuraScans-DL-Bot/issues/new?assignees=riimuru&labels=bug&template=bug-report.yml">Bug report</a>
+    <a href="https://github.com/tas33n/AsuraScans-DL-Bot/issues/new?assignees=tas33n&labels=bug&template=bug-report.yml">Bug report</a>
     ·
-    <a href="https://github.com/tas33n/AsuraScans-DL-Bot/issues/new?assignees=riimuru&labels=enhancement&template=feature-request.md">Feature request</a>
+    <a href="https://github.com/tas33n/AsuraScans-DL-Bot/issues/new?assignees=tas33n&labels=enhancement&template=feature-request.md">Feature request</a>
   </p>
   <p align="center">
         <a href="https://github.com/tas33n/AsuraScans-DL-Bot">
