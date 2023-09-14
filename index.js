@@ -30,7 +30,20 @@ app.listen(PORT, () => {
 
 //_______________________________________________________________
 
-const bot = new Telegraf('BOT_TOKEN');
+// Get the bot token from the environment variable
+const botToken =  //process.env.BOT_TOKEN;
+
+// Check if the bot token is defined
+if (!botToken) {
+  console.error('Bot token not found in environment variables. Make sure to set the BOT_TOKEN secret.');
+  process.exit(1); // Exit the program with an error code
+}
+
+const bot = new Telegraf(botToken);
+
+// if u dont wanna use environment variable u can use token in below line.
+// const bot = new Telegraf('<BOT_TOKEN>'); 
+
 
 bot.start((ctx) => {
   ctx.reply('Welcome to the Image to PDF bot! Please send me the URL of the images you want to convert to PDF.');
@@ -46,6 +59,79 @@ bot.help((ctx) => {
   );
 });
 
+const timeoutDuration = 50000;
+
+bot.command('mdl', async (ctx) => {
+  const messageText = ctx.message.text;
+  const match = messageText.match(/\/mdl (https:\/\/asuracomics\.com\/.+?) \| (\d+) -> (\d+)/);
+
+  if (!match) {
+    ctx.reply('Invalid command format. Please use "/mdl URL | startCh -> endCh".');
+    return;
+  }
+
+  const baseUrl = match[1];
+  const startChapter = parseInt(match[2]);
+  const endChapter = parseInt(match[3]);
+
+  if (isNaN(startChapter) || isNaN(endChapter) || startChapter <= 0 || endChapter <= 0 || startChapter > endChapter) {
+    ctx.reply('Invalid chapter range. Please provide valid starting and ending chapter numbers.');
+    return;
+  }
+
+  try {
+    // Loop through chapters
+    for (let chapterNumber = startChapter; chapterNumber <= endChapter; chapterNumber++) {
+      const url = `${baseUrl}-chapter-${chapterNumber}/`;
+
+      // Show a "downloading, please wait" message for each chapter
+      const downloadingMessage = await ctx.reply(`Downloading Chapter ${chapterNumber}, please wait...`);
+
+      // Use Promise.race to set a timeout for the current chapter's download
+      const chapterPromise = new Promise(async (resolve, reject) => {
+        try {
+          // Scrape images and create PDF for the current chapter
+          const folderName = await scrapeImages(url);
+          const pdfPath = await createPdfFromImages(folderName);
+
+          // Send the generated PDF to the user for the current chapter
+          const pdfFileName = path.basename(pdfPath);
+          await ctx.replyWithDocument({ source: pdfPath }, { filename: pdfFileName });
+
+          // Clean up the temporary folder and PDF file for the current chapter
+          cleanup(folderName, pdfPath);
+
+          // Resolve the Promise when download is complete
+          resolve();
+        } catch (error) {
+          // Reject the Promise if there's an error
+          reject(error);
+        }
+      });
+
+      // Use Promise.race to set a timeout for the current chapter's download
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => {
+          reject(new Error(`Chapter ${chapterNumber} download timed out`));
+        }, timeoutDuration);
+      });
+
+      // Wait for either the chapterPromise or timeoutPromise to resolve
+      await Promise.race([chapterPromise, timeoutPromise]);
+
+      // Delete the "Downloading Chapter X" message after 5 seconds
+      setTimeout(async (message) => {
+        await ctx.telegram.deleteMessage(message.chat.id, message.message_id);
+      }, 5000, downloadingMessage);
+    }
+
+    ctx.reply('All chapters download complete.');
+
+  } catch (error) {
+    console.error('Error:', error);
+    ctx.reply('An error occurred while processing the URL.');
+  }
+});
 
 
 bot.on('text', async (ctx) => {
@@ -125,6 +211,7 @@ bot.on('text', async (ctx) => {
     ctx.reply('An error occurred while processing the URL.');
   }
 });
+
 
 bot.launch();
 
