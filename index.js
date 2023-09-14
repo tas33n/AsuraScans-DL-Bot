@@ -51,11 +51,8 @@ bot.start((ctx) => {
 
 bot.help((ctx) => {
   ctx.reply(
-    'Welcome to the Image to PDF bot!\n\n' +
-    'To use this bot, simply send a valid URL that contains images you want to convert to PDF. ' +
-    'The bot will scrape the images and send you a PDF document.\n\n' +
-    'Commands:\n' +
-    '/help - Show this help message\n'
+    'Welcome to AsuraScans – Downloader!\n\n' +
+    '/dl {chapter_url} or juat send the chapter_url: Download a specific chapter. \n\n/mdl {chapter_url} | {start_chapter} -> {end_chapter}: Download a range of chapters. \n\n/help: View available commands and instructions.'
   );
 });
 
