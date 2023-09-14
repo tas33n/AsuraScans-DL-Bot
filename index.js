@@ -31,7 +31,7 @@ app.listen(PORT, () => {
 //_______________________________________________________________
 
 // Get the bot token from the environment variable
-const botToken =  //process.env.BOT_TOKEN;
+const botToken = process.env.BOT_TOKEN;
 
 // Check if the bot token is defined
 if (!botToken) {
@@ -42,7 +42,7 @@ if (!botToken) {
 const bot = new Telegraf(botToken);
 
 // if u dont wanna use environment variable u can use token in below line.
-// const bot = new Telegraf('<BOT_TOKEN>'); 
+// const bot = new Telegraf('<BOT_TOKEN>');
 
 
 bot.start((ctx) => {
@@ -132,6 +132,91 @@ bot.command('mdl', async (ctx) => {
     ctx.reply('An error occurred while processing the URL.');
   }
 });
+
+
+bot.command('dl', async (ctx) => {
+  const text = ctx.message.text;
+
+  // Check if the message contains a valid URL
+  // Define a regular expression pattern for the expected URL format
+  const validURLPattern = /^\/dl (https:\/\/asuracomics\.com\/.+?)\/$/;
+
+  // Check if the URL matches the pattern
+  const match = text.match(validURLPattern);
+
+  if (!match) {
+    ctx.reply('Invalid URL. Please provide a valid asuracomics URL.');
+    return;
+  }
+
+  const url = match[1];
+  console.log(url);
+
+  try {
+    // Show a "downloading, please wait" message
+    const downloadingMessage = await ctx.reply('Downloading, please wait...', {
+      reply_to_message_id: ctx.message.message_id,
+    });
+
+    // Scrape images and create PDF
+    console.log(url);
+
+    const folderName = await scrapeImages(url);
+
+    // Update the message to indicate that image downloading is complete
+    await ctx.telegram.editMessageText(
+      downloadingMessage.chat.id,
+      downloadingMessage.message_id,
+      null,
+      'Image downloading complete. Generating PDF...'
+    );
+
+    const pdfPath = await createPdfFromImages(folderName);
+
+    // Update the message to indicate that PDF generation is complete
+    await ctx.telegram.editMessageText(
+      downloadingMessage.chat.id,
+      downloadingMessage.message_id,
+      null,
+      'PDF generation complete. Sending document...'
+    );
+
+
+    console.log(pdfPath);
+
+    // Send the generated PDF to the user
+    const pdfFileName = path.basename(pdfPath);
+    ctx.replyWithDocument({ source: pdfPath }, { filename: pdfFileName })
+      .then(async () => {
+
+        // Update the message to indicate that the document is ready for download
+        const readyMessage = await ctx.telegram.editMessageText(
+          downloadingMessage.chat.id,
+          downloadingMessage.message_id,
+          null,
+          'Document file ready for download. Cleaning up...'
+        );
+
+        // Delete the "Document file ready for download" message after 5 seconds
+        setTimeout(async (message) => {
+          await ctx.telegram.deleteMessage(message.chat.id, message.message_id);
+        }, 3000, readyMessage);
+
+        // File sent successfully, now clean up
+        cleanup(folderName, pdfPath);
+      })
+      .catch((error) => {
+        console.error('Error sending file:', error);
+        // Handle the error here, such as retrying or reporting the issue
+      });
+
+
+  } catch (error) {
+    console.error('Error:', error);
+    ctx.reply('An error occurred while processing the URL.');
+  }
+});
+
 
 
 bot.on('text', async (ctx) => {
