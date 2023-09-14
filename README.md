@@ -72,7 +72,8 @@
 
 3. Wait for the bot to process your request, and it will provide you with the requested manga/manhwa chapters in PDF format.
 
-
+ <img src="https://raw.githubusercontent.com/tas33n/AsuraScans-DL-Bot/cec5255eafddab10aec12be5f6bf44c7bad7531f/preview.jpg" alt="AsuraScans Preview" width="90%">
+ 
 ## Installation
 
 ### Local
