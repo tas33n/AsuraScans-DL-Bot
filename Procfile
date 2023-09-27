@@ -1,1 +1,1 @@
-web: node puppy.js
+web: node index.js
