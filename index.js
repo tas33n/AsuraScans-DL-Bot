@@ -60,7 +60,7 @@ const timeoutDuration = 50000;
 
 bot.command('mdl', async (ctx) => {
   const messageText = ctx.message.text;
-  const match = messageText.match(/\/mdl (https:\/\/asuracomics\.com\/.+?) \| (\d+) -> (\d+)/);
+  const match = messageText.match(/\/mdl (https:\/\/asuracomics\.gg\/.+?) \| (\d+) -> (\d+)/);
 
   if (!match) {
     ctx.reply('Invalid command format. Please use "/mdl URL | startCh -> endCh".');
@@ -136,7 +136,7 @@ bot.command('dl', async (ctx) => {
 
   // Check if the message contains a valid URL
   // Define a regular expression pattern for the expected URL format
-  const validURLPattern = /^\/dl (https:\/\/asuracomics\.com\/.+?)\/$/;
+  const validURLPattern = /^\/dl (https:\/\/asuracomics\.gg\/.+?)\/$/;
 
   // Check if the URL matches the pattern
   const match = text.match(validURLPattern);
@@ -221,7 +221,7 @@ bot.on('text', async (ctx) => {
 
   // Check if the message contains a valid URL
   // Define a regular expression pattern for the expected URL format
-  const validURLPattern = /^https:\/\/asuracomics\.com\/(\d+-.+?)\/$/;
+  const validURLPattern = /^https:\/\/asuracomics\.gg\/(\d+-.+?)\/$/;
 
   // Check if the URL matches the pattern
   const match = url.match(validURLPattern);
