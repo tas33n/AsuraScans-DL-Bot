@@ -9,7 +9,7 @@ const express = require("express");
 
 // for uptime api that can keep the bot alive
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 // To track bot's uptime
 const startTime = Date.now();
 
