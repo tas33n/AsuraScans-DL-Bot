@@ -397,7 +397,7 @@ async function scrapeImages(url) {
 //   return pdfPath;
 // }
 
-async function createPdfFromImages(folderName, url) {
+async function createPdfFromImages(folderName, url, chapterUrls) {
   try {
     const pdfPath = folderName + '.pdf';
     const imageFiles = fs.readdirSync(folderName);
@@ -442,18 +442,13 @@ async function createPdfFromImages(folderName, url) {
     const pdfBytes = await pdfDoc.save();
     fs.writeFileSync(pdfPath, pdfBytes);
 
-    // Remove the processed URL from the chapterUrls array
-    const indexToRemove = chapterUrls.indexOf(url);
-    if (indexToRemove !== -1) {
-      chapterUrls.splice(indexToRemove, 1);
-    }
-
     return pdfPath;
   } catch (error) {
     console.error('Error creating PDF from images:', error);
     throw error; // Propagate the error for higher-level handling
   }
 }
+
 
 
 async function cleanup(folderName, pdfPath) {
