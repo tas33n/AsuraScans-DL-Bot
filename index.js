@@ -119,7 +119,7 @@ bot.command('mdl', async (ctx) => {
       // Delete the "Downloading Chapter X" message after 5 seconds
       setTimeout(async (message) => {
         await ctx.telegram.deleteMessage(message.chat.id, message.message_id);
-      }, 5000, downloadingMessage);
+      }, 3000, downloadingMessage);
     }
 
     ctx.reply('All chapters download complete.');
