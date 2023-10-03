@@ -442,6 +442,12 @@ async function createPdfFromImages(folderName, url) {
     const pdfBytes = await pdfDoc.save();
     fs.writeFileSync(pdfPath, pdfBytes);
 
+    // Remove the processed URL from the chapterUrls array
+    const indexToRemove = chapterUrls.indexOf(url);
+    if (indexToRemove !== -1) {
+      chapterUrls.splice(indexToRemove, 1);
+    }
+
     return pdfPath;
   } catch (error) {
     console.error('Error creating PDF from images:', error);
