@@ -355,49 +355,7 @@ async function scrapeImages(url) {
   }
 }
 
-// async function createPdfFromImages(folderName) {
-
-//   const pdfPath = folderName + '.pdf';
-//   const imageFiles = fs.readdirSync(folderName);
-//   const pdfDoc = await PDFDocument.create();
-//   const pdfPages = [];
-
-//   for (const imageFile of imageFiles) {
-//     const imagePath = path.join(folderName, imageFile);
-
-//     // Get the image dimensions dynamically
-//     const { width: imageWidth, height: imageHeight } = await sharp(imagePath).metadata();
-
-//     const pdfPage = pdfDoc.addPage([imageWidth, imageHeight]);
-//     const image = await sharp(imagePath).toBuffer();
-//     const imageXObject = await pdfDoc.embedJpg(image);
-
-//     pdfPage.drawImage(imageXObject, {
-//       x: 0,
-//       y: 0,
-//       width: imageWidth,
-//       height: imageHeight,
-//     });
-
-//     pdfPages.push(pdfPage);
-//   }
-
-//   for (const pdfPage of pdfPages) {
-//     pdfPage.setFontSize(12);
-//     pdfPage.drawText('tg@misfitsdev', {
-//       x: 30,
-//       y: 30,
-//       color: rgb(0, 0, 0),
-//     });
-//   }
-
-//   const pdfBytes = await pdfDoc.save();
-//   fs.writeFileSync(pdfPath, pdfBytes);
-
-//   return pdfPath;
-// }
-
-async function createPdfFromImages(folderName, url) {
+async function createPdfFromImages(folderName, url, chapterUrls) {
   try {
     const pdfPath = folderName + '.pdf';
     const imageFiles = fs.readdirSync(folderName);
@@ -408,7 +366,6 @@ async function createPdfFromImages(folderName, url) {
       const imagePath = path.join(folderName, imageFile);
 
       try {
-        // Get the image dimensions dynamically
         const { width: imageWidth, height: imageHeight } = await sharp(imagePath).metadata();
 
         const pdfPage = pdfDoc.addPage([imageWidth, imageHeight]);
@@ -442,16 +399,10 @@ async function createPdfFromImages(folderName, url) {
     const pdfBytes = await pdfDoc.save();
     fs.writeFileSync(pdfPath, pdfBytes);
 
-    // Remove the processed URL from the chapterUrls array
-    const indexToRemove = chapterUrls.indexOf(url);
-    if (indexToRemove !== -1) {
-      chapterUrls.splice(indexToRemove, 1);
-    }
-
     return pdfPath;
   } catch (error) {
     console.error('Error creating PDF from images:', error);
-    throw error; // Propagate the error for higher-level handling
+    throw error; 
   }
 }
 
