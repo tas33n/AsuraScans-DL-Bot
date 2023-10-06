@@ -6,11 +6,11 @@ const { PDFDocument, rgb } = require('pdf-lib');
 const sharp = require('sharp');
 const path = require('path');
 const express = require("express");
+const pTimeout = require('p-timeout');
 
-// for uptime api that can keep the bot alive
+// For uptime API to keep the bot alive
 const app = express();
 const PORT = process.env.PORT || 3000;
-// To track bot's uptime
 const startTime = Date.now();
 
 app.get("/uptime", (req, res) => {
@@ -18,7 +18,6 @@ app.get("/uptime", (req, res) => {
   const uptimeMilliseconds = currentTime - startTime;
   const uptimeSeconds = Math.floor(uptimeMilliseconds / 1000);
 
-  // Returning JSON data
   res.json({
     uptime: `${uptimeSeconds} seconds`,
   });
@@ -28,22 +27,8 @@ app.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);
 });
 
-//_______________________________________________________________
-
-// Get the bot token from the environment variable
-const botToken = "5855171019:AAGuJ_7hN_plpfZoHH9kkNJZSP2amCOQ-f0"; //process.env.BOT_TOKEN;
-
-// Check if the bot token is defined
-if (!botToken) {
-  console.error('Bot token not found in environment variables. Make sure to set the BOT_TOKEN secret.');
-  process.exit(1); // Exit the program with an error code
-}
-
+const botToken = process.env.BOT_TOKEN;
 const bot = new Telegraf(botToken);
-
-// if u dont wanna use environment variable u can use token in below line.
-// const bot = new Telegraf('<BOT_TOKEN>');
-
 
 bot.start((ctx) => {
   ctx.reply('Welcome to the Image to PDF bot! Please send me the URL of the images you want to convert to PDF.');
@@ -52,36 +37,50 @@ bot.start((ctx) => {
 bot.help((ctx) => {
   ctx.reply(
     'Welcome to AsuraScans – Downloader!\n\n' +
-    '/dl {chapter_url} or juat send the chapter_url: Download a specific chapter. \n\n/mdl {chapter_url} | {start_chapter} -> {end_chapter}: Download a range of chapters. \n\n/help: View available commands and instructions.'
+    '/dl {chapter_url} or just send the chapter_url: Download a specific chapter. \n\n/mdl {chapter_url} | {start_chapter} -> {end_chapter}: Download a range of chapters. \n\n/help: View available commands and instructions.'
   );
 });
 
-const timeoutDuration = 50000;
-
 bot.on('text', async (ctx) => {
-  const url = ctx.message.text;
+
+  const messageText = ctx.message.text;
+  const match = messageText.match(/(https:\/\/www\.mangapill\.com\/manga\/\d+\/[\w-]+) \| (\d+) -> (\d+)/);
+
+  if (!match) {
+    ctx.reply('Invalid command format. Please use "URL | startCh -> endCh".');
+    return;
+  }
+
+  const url = match[1];
+  const startPoint = parseInt(match[2]);
+  const endPoint = parseInt(match[3]);
+
+
+  if (isNaN(startPoint) || isNaN(endPoint) || startPoint <= 0 || endPoint <= 0 || startPoint > endPoint) {
+    ctx.reply('Invalid chapter range. Please provide valid starting and ending chapter numbers.');
+    return;
+  }
+
 
   try {
-    // Show a "downloading, please wait" message
     const downloadingMessage = await ctx.reply('Downloading, please wait...', {
       reply_to_message_id: ctx.message.message_id,
     });
 
-    // Scrape the URLs of chapters
     const urlsJson = await scrapeChapterUrl(url);
 
-    // Specify the start and end points for the range (e.g., 1 to 10)
-    const startPoint = 8;
-    const endPoint = 10;
-
-    // Get the chapter URLs within the specified range
     const chapterUrls = getChapterUrls(startPoint, endPoint, urlsJson);
 
-    // Process all chapters
+    console.log(chapterUrls);
+
     await processAllChapters(chapterUrls, ctx);
 
-    // Send a success message
-    await ctx.reply('All chapters processed successfully.');
+    await ctx.telegram.editMessageText(
+      downloadingMessage.chat.id,
+      downloadingMessage.message_id,
+      null,
+      'All chapters Downloaded successfully.'
+    );
 
   } catch (error) {
     console.error('Error:', error);
@@ -89,58 +88,44 @@ bot.on('text', async (ctx) => {
   }
 });
 
-
 bot.launch();
-
 
 async function scrapeImagesAsura(url) {
   try {
     const folderName = "tmp/" + url.split('/').filter(Boolean).pop().replace(/^(\d+-)/, '');
-    // Make a GET request to the URL
     const response = await axios.get(url);
-
-    // Load the HTML content into Cheerio
     const $ = cheerio.load(response.data);
-
-    // Find the <div id="readerarea"> element
     const readerArea = $('#readerarea');
-
-    // Find all <img> elements within the <div id="readerarea">
     const imgElements = readerArea.find('img[decoding="async"][src]');
 
-    // Create a directory for the images
     if (!fs.existsSync(folderName)) {
       fs.mkdirSync(folderName);
     }
 
-    // Create an array to store the image source URLs
     const imgSrcArray = [];
 
-    // Loop through the img elements and collect the image source URLs
     imgElements.each((index, element) => {
       const imgSrc = $(element).attr('src');
       imgSrcArray.push(imgSrc);
     });
 
-    console.log(imgSrcArray);
-
-    // Loop through the array of image source URLs and download the images
     for (let i = 0; i < imgSrcArray.length; i++) {
       const imgSrc = imgSrcArray[i];
-      const imgName = path.basename(imgSrc);
-      const imgPath = path.join(folderName, imgName);
+      if (imgSrc) {
+        const imgName = path.basename(imgSrc);
+        const imgPath = path.join(folderName, imgName);
 
-      // Download the image
-      await axios({
-        method: 'get',
-        url: imgSrc,
-        responseType: 'stream',
-      }).then((response) => {
-        response.data.pipe(fs.createWriteStream(imgPath));
-        console.log(`Downloaded: ${imgPath}`);
-      }).catch((error) => {
-        console.error(`Error downloading image: ${imgSrc}`);
-      });
+        await axios({
+          method: 'get',
+          url: imgSrc,
+          responseType: 'stream',
+        }).then((response) => {
+          response.data.pipe(fs.createWriteStream(imgPath));
+          console.log(`Downloaded: ${imgPath}`);
+        }).catch((error) => {
+          console.error(`Error downloading image: ${imgSrc}`);
+        });
+      }
     }
 
     return folderName;
@@ -150,7 +135,7 @@ async function scrapeImagesAsura(url) {
   }
 }
 
-async function createPdfFromImages(folderName, url, chapterUrls) {
+async function createPdfFromImages(folderName) {
   try {
     const pdfPath = folderName + '.pdf';
     const imageFiles = fs.readdirSync(folderName);
@@ -162,7 +147,6 @@ async function createPdfFromImages(folderName, url, chapterUrls) {
 
       try {
         const { width: imageWidth, height: imageHeight } = await sharp(imagePath).metadata();
-
         const pdfPage = pdfDoc.addPage([imageWidth, imageHeight]);
         const image = await sharp(imagePath).toBuffer();
         const imageXObject = await pdfDoc.embedJpg(image);
@@ -176,9 +160,8 @@ async function createPdfFromImages(folderName, url, chapterUrls) {
 
         pdfPages.push(pdfPage);
       } catch (imageError) {
-        // Handle the case where the image is not a valid JPEG
         console.error(`Error processing image: ${imagePath}`, imageError);
-        continue; // Skip this image and proceed with the next one
+        continue;
       }
     }
 
@@ -201,73 +184,70 @@ async function createPdfFromImages(folderName, url, chapterUrls) {
   }
 }
 
-
 async function cleanup(folderName, pdfPath) {
   try {
-    // Remove the temporary folder and its contents
     fs.rmSync(folderName, { recursive: true });
-
-    // Remove the generated PDF file
     fs.unlinkSync(pdfPath);
-
     console.log('Cleanup completed successfully.');
   } catch (error) {
     console.error('Cleanup error:', error);
   }
 }
 
-
 async function scrapeChapterUrl(url) {
   try {
-    const baseUrl = new URL(url).origin; // Extract the base URL from the full URL
-
-    // Make a GET request to the URL
+    const baseUrl = new URL(url).origin;
     const response = await axios.get(url);
-
-    // Load the HTML content into Cheerio
     const $ = cheerio.load(response.data);
-
-    // Find the specific <div> with attribute data-filter-list
     const divWithFilterList = $('div[data-filter-list]');
-
-    // Find all <a> elements within the div
     const aElements = divWithFilterList.find('a');
-
-    // Create an array to store the href values with the host
     const hrefArray = [];
 
-    // Iterate through the <a> elements and extract the href attributes
     aElements.each((index, element) => {
       const href = $(element).attr('href');
       if (href) {
-        // Add the host (base URL) to the href values if they are relative
         const completeHref = href.startsWith('http') ? href : baseUrl + href;
         hrefArray.push(completeHref);
       }
     });
 
-    // Reverse the hrefArray
     const reversedArray = hrefArray.reverse();
-
-    // Create a JSON object with the manga name, base URL, and the reversed href values
     const jsonContent = {
       mangaName: path.basename(url),
       baseUrl: url,
       reversedHrefValues: reversedArray,
     };
 
-    // Convert the JSON object to a string
     const jsonString = JSON.stringify(jsonContent, null, 2);
-
-    // Save the JSON to a file with the manga name as the filename
     const fileName = path.basename(url) + '.json';
     fs.writeFileSync(fileName, jsonString);
+    return fileName;
 
-    return fileName
-
-    console.log(`Reversed JSON data saved to ${fileName}`);
   } catch (error) {
     console.error('Error:', error);
+  }
+}
+
+function getChapterUrls(startPoint, endPoint, urlsJson) {
+  try {
+    // Read the JSON file containing the URLs
+    const jsonData = fs.readFileSync('omniscient-reader.json', 'utf-8');
+    const mangaUrls = JSON.parse(jsonData);
+
+    // Filter the URLs based on the specified range
+    const matchingUrls = mangaUrls.reversedHrefValues.filter((url) => {
+      const match = url.match(/-([0-9]+)$/);
+      if (match) {
+        const chapterNumber = parseInt(match[1]);
+        return chapterNumber >= startPoint && chapterNumber <= endPoint;
+      }
+      return false;
+    });
+
+    return matchingUrls; // Return the array of matching URLs
+  } catch (error) {
+    console.error('Error:', error);
+    return []; // Return an empty array in case of an error
   }
 }
 
@@ -277,18 +257,9 @@ async function scrapeImagesMangapill(url) {
     const folderName = "tmp/" + url.split('/').filter(Boolean).pop().replace(/^(\d+-)/, '');
     // Make a GET request to the URL
     const response = await axios.get(url);
-
-    // Load the HTML content into Cheerio
     const $ = cheerio.load(response.data);
-
-    // Find the <div id="readerarea"> element
     const readerArea = $('.relative.bg-card.flex.justify-center.items-center');
-
     const imgElements = readerArea.find('img[data-src]');
-
-
-    // console.log(imgElements);
-
 
     // Create a directory for the images
     if (!fs.existsSync(folderName)) {
@@ -346,62 +317,35 @@ async function scrapeImagesMangapill(url) {
   }
 }
 
-function getChapterUrls(startPoint, endPoint, urlsJson) {
-  try {
-    // Read the JSON file containing the URLs
-    console.log(urlsJson);
-
-    const jsonData = fs.readFileSync(urlsJson, 'utf-8');
-    const mangaUrls = JSON.parse(jsonData);
-
-    // Filter the URLs based on the specified range
-    const matchingUrls = mangaUrls.reversedHrefValues.filter((url) => {
-      const match = url.match(/-([0-9]+)$/);
-      if (match) {
-        const chapterNumber = parseInt(match[1]);
-        return chapterNumber >= startPoint && chapterNumber <= endPoint;
-      }
-      return false;
-    });
-
-    return matchingUrls; // Return the array of matching URLs
-  } catch (error) {
-    console.error('Error:', error);
-    return []; // Return an empty array in case of an error
-  }
-}
-
-
-
 
 async function processAllChapters(chapterUrls, ctx) {
   try {
-    // Loop through the chapter URLs and process each one
     for (const url of chapterUrls) {
       try {
-        // Scrape images and create PDF for the current chapter
-        const folderName = await scrapeImagesMangapill(url);
+        // const folderName = await scrapeImagesMangapill(url);
+        const folderName = await pTimeout(scrapeImagesMangapill(url), 90000);
         const pdfPath = await createPdfFromImages(folderName);
-
-        // Send the generated PDF to the user for the current chapter
         const pdfFileName = path.basename(pdfPath);
+
         await ctx.replyWithDocument({ source: pdfPath }, { filename: pdfFileName });
-
-        // Clean up the temporary folder and PDF file for the current chapter
         cleanup(folderName, pdfPath);
-
         console.log(`Chapter processed successfully: ${url}`);
       } catch (error) {
-        // Handle errors for the current chapter
-        console.error(`Error processing chapter ${url}:`, error);
+        if (error instanceof pTimeout.TimeoutError) {
+          console.error('Operation timed out:', error);
+        } else {
+          console.error('Error processing chapter:', error);
+        }
       }
-    }
 
-    console.log('All chapters processed successfully');
+    }
+    console.log('All chapters Downloaded successfully');
   } catch (error) {
-    // Handle errors if needed
     console.error('Error processing chapters:', error);
   }
 }
 
-
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+  // You can add additional error handling logic here if needed
+});
