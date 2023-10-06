@@ -6,7 +6,7 @@ const { PDFDocument, rgb } = require('pdf-lib');
 const sharp = require('sharp');
 const path = require('path');
 const express = require("express");
-const pTimeout = require('p-timeout');
+// const pTimeout = require("p-timeout");
 
 // For uptime API to keep the bot alive
 const app = express();
@@ -323,7 +323,7 @@ async function processAllChapters(chapterUrls, ctx) {
     for (const url of chapterUrls) {
       try {
         // const folderName = await scrapeImagesMangapill(url);
-        const folderName = await pTimeout(scrapeImagesMangapill(url), 90000);
+        const folderName = await scrapeImagesMangapill(url);
         const pdfPath = await createPdfFromImages(folderName);
         const pdfFileName = path.basename(pdfPath);
 
@@ -331,11 +331,7 @@ async function processAllChapters(chapterUrls, ctx) {
         cleanup(folderName, pdfPath);
         console.log(`Chapter processed successfully: ${url}`);
       } catch (error) {
-        if (error instanceof pTimeout.TimeoutError) {
-          console.error('Operation timed out:', error);
-        } else {
-          console.error('Error processing chapter:', error);
-        }
+        console.error('Error processing chapter:', error);
       }
 
     }
