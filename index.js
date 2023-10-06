@@ -51,7 +51,7 @@ bot.on('text', async (ctx) => {
     return;
   }
 
-  const url = match[1];
+  const url = "https://misfitsdev.co/get.php?url=" + match[1];
   const startPoint = parseInt(match[2]);
   const endPoint = parseInt(match[3]);
 
