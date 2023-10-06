@@ -31,7 +31,7 @@ app.listen(PORT, () => {
 //_______________________________________________________________
 
 // Get the bot token from the environment variable
-const botToken = process.env.BOT_TOKEN;
+const botToken = "5855171019:AAGuJ_7hN_plpfZoHH9kkNJZSP2amCOQ-f0"; //process.env.BOT_TOKEN;
 
 // Check if the bot token is defined
 if (!botToken) {
@@ -58,235 +58,30 @@ bot.help((ctx) => {
 
 const timeoutDuration = 50000;
 
-bot.command('mdl', async (ctx) => {
-  const messageText = ctx.message.text;
-  const match = messageText.match(/\/mdl (https:\/\/asuracomics\.gg\/.+?) \| (\d+) -> (\d+)/);
-
-  if (!match) {
-    ctx.reply('Invalid command format. Please use "/mdl URL | startCh -> endCh".');
-    return;
-  }
-
-  const baseUrl = match[1];
-  const startChapter = parseInt(match[2]);
-  const endChapter = parseInt(match[3]);
-
-  if (isNaN(startChapter) || isNaN(endChapter) || startChapter <= 0 || endChapter <= 0 || startChapter > endChapter) {
-    ctx.reply('Invalid chapter range. Please provide valid starting and ending chapter numbers.');
-    return;
-  }
-
-  try {
-    // Loop through chapters
-    for (let chapterNumber = startChapter; chapterNumber <= endChapter; chapterNumber++) {
-      const url = `${baseUrl}-chapter-${chapterNumber}/`;
-
-      // Show a "downloading, please wait" message for each chapter
-      const downloadingMessage = await ctx.reply(`Downloading Chapter ${chapterNumber}, please wait...`);
-
-      // Use Promise.race to set a timeout for the current chapter's download
-      const chapterPromise = new Promise(async (resolve, reject) => {
-        try {
-          // Scrape images and create PDF for the current chapter
-          const folderName = await scrapeImages(url);
-          const pdfPath = await createPdfFromImages(folderName);
-
-          // Send the generated PDF to the user for the current chapter
-          const pdfFileName = path.basename(pdfPath);
-          await ctx.replyWithDocument({ source: pdfPath }, { filename: pdfFileName });
-
-          // Clean up the temporary folder and PDF file for the current chapter
-          cleanup(folderName, pdfPath);
-
-          // Resolve the Promise when download is complete
-          resolve();
-        } catch (error) {
-          // Reject the Promise if there's an error
-          reject(error);
-        }
-      });
-
-      // Use Promise.race to set a timeout for the current chapter's download
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => {
-          reject(new Error(`Chapter ${chapterNumber} download timed out`));
-        }, timeoutDuration);
-      });
-
-      // Wait for either the chapterPromise or timeoutPromise to resolve
-      await Promise.race([chapterPromise, timeoutPromise]);
-
-      // Delete the "Downloading Chapter X" message after 5 seconds
-      setTimeout(async (message) => {
-        await ctx.telegram.deleteMessage(message.chat.id, message.message_id);
-      }, 3000, downloadingMessage);
-    }
-
-    ctx.reply('All chapters download complete.');
-
-  } catch (error) {
-    console.error('Error:', error);
-    ctx.reply('An error occurred while processing the URL.');
-  }
-});
-
-
-bot.command('dl', async (ctx) => {
-  const text = ctx.message.text;
-
-  // Check if the message contains a valid URL
-  // Define a regular expression pattern for the expected URL format
-  const validURLPattern = /^\/dl (https:\/\/asuracomics\.gg\/.+?)\/$/;
-
-  // Check if the URL matches the pattern
-  const match = text.match(validURLPattern);
-
-  if (!match) {
-    ctx.reply('Invalid URL. Please provide a valid asuracomics URL.');
-    return;
-  }
-
-  const url = match[1];
-  console.log(url);
-
-  try {
-    // Show a "downloading, please wait" message
-    const downloadingMessage = await ctx.reply('Downloading, please wait...', {
-      reply_to_message_id: ctx.message.message_id,
-    });
-
-    // Scrape images and create PDF
-    console.log(url);
-
-    const folderName = await scrapeImages(url);
-
-    // Update the message to indicate that image downloading is complete
-    await ctx.telegram.editMessageText(
-      downloadingMessage.chat.id,
-      downloadingMessage.message_id,
-      null,
-      'Image downloading complete. Generating PDF...'
-    );
-
-    const pdfPath = await createPdfFromImages(folderName);
-
-    // Update the message to indicate that PDF generation is complete
-    await ctx.telegram.editMessageText(
-      downloadingMessage.chat.id,
-      downloadingMessage.message_id,
-      null,
-      'PDF generation complete. Sending document...'
-    );
-
-
-    console.log(pdfPath);
-
-    // Send the generated PDF to the user
-    const pdfFileName = path.basename(pdfPath);
-    ctx.replyWithDocument({ source: pdfPath }, { filename: pdfFileName })
-      .then(async () => {
-
-        // Update the message to indicate that the document is ready for download
-        const readyMessage = await ctx.telegram.editMessageText(
-          downloadingMessage.chat.id,
-          downloadingMessage.message_id,
-          null,
-          'Document file ready for download. Cleaning up...'
-        );
-
-        // Delete the "Document file ready for download" message after 5 seconds
-        setTimeout(async (message) => {
-          await ctx.telegram.deleteMessage(message.chat.id, message.message_id);
-        }, 3000, readyMessage);
-
-        // File sent successfully, now clean up
-        cleanup(folderName, pdfPath);
-      })
-      .catch((error) => {
-        console.error('Error sending file:', error);
-        // Handle the error here, such as retrying or reporting the issue
-      });
-
-
-  } catch (error) {
-    console.error('Error:', error);
-    ctx.reply('An error occurred while processing the URL.');
-  }
-});
-
-
-
 bot.on('text', async (ctx) => {
   const url = ctx.message.text;
 
-  // Check if the message contains a valid URL
-  // Define a regular expression pattern for the expected URL format
-  const validURLPattern = /^https:\/\/asuracomics\.gg\/(\d+-.+?)\/$/;
-
-  // Check if the URL matches the pattern
-  const match = url.match(validURLPattern);
-
-  if (!match) {
-    ctx.reply('Invalid URL. Please provide a valid asuracomics URL.');
-    return;
-  }
-
   try {
     // Show a "downloading, please wait" message
     const downloadingMessage = await ctx.reply('Downloading, please wait...', {
       reply_to_message_id: ctx.message.message_id,
     });
 
-    // Scrape images and create PDF
-    const folderName = await scrapeImages(url);
+    // Scrape the URLs of chapters
+    const urlsJson = await scrapeChapterUrl(url);
 
-    // Update the message to indicate that image downloading is complete
-    await ctx.telegram.editMessageText(
-      downloadingMessage.chat.id,
-      downloadingMessage.message_id,
-      null,
-      'Image downloading complete. Generating PDF...'
-    );
+    // Specify the start and end points for the range (e.g., 1 to 10)
+    const startPoint = 8;
+    const endPoint = 10;
 
-    const pdfPath = await createPdfFromImages(folderName);
+    // Get the chapter URLs within the specified range
+    const chapterUrls = getChapterUrls(startPoint, endPoint, urlsJson);
 
-    // Update the message to indicate that PDF generation is complete
-    await ctx.telegram.editMessageText(
-      downloadingMessage.chat.id,
-      downloadingMessage.message_id,
-      null,
-      'PDF generation complete. Sending document...'
-    );
+    // Process all chapters
+    await processAllChapters(chapterUrls, ctx);
 
-
-    console.log(pdfPath);
-
-    // Send the generated PDF to the user
-    const pdfFileName = path.basename(pdfPath);
-    ctx.replyWithDocument({ source: pdfPath }, { filename: pdfFileName })
-      .then(async () => {
-
-        // Update the message to indicate that the document is ready for download
-        const readyMessage = await ctx.telegram.editMessageText(
-          downloadingMessage.chat.id,
-          downloadingMessage.message_id,
-          null,
-          'Document file ready for download. Cleaning up...'
-        );
-
-        // Delete the "Document file ready for download" message after 5 seconds
-        setTimeout(async (message) => {
-          await ctx.telegram.deleteMessage(message.chat.id, message.message_id);
-        }, 3000, readyMessage);
-
-        // File sent successfully, now clean up
-        cleanup(folderName, pdfPath);
-      })
-      .catch((error) => {
-        console.error('Error sending file:', error);
-        // Handle the error here, such as retrying or reporting the issue
-      });
-
+    // Send a success message
+    await ctx.reply('All chapters processed successfully.');
 
   } catch (error) {
     console.error('Error:', error);
@@ -298,7 +93,7 @@ bot.on('text', async (ctx) => {
 bot.launch();
 
 
-async function scrapeImages(url) {
+async function scrapeImagesAsura(url) {
   try {
     const folderName = "tmp/" + url.split('/').filter(Boolean).pop().replace(/^(\d+-)/, '');
     // Make a GET request to the URL
@@ -402,7 +197,7 @@ async function createPdfFromImages(folderName, url, chapterUrls) {
     return pdfPath;
   } catch (error) {
     console.error('Error creating PDF from images:', error);
-    throw error; 
+    throw error;
   }
 }
 
@@ -420,3 +215,193 @@ async function cleanup(folderName, pdfPath) {
     console.error('Cleanup error:', error);
   }
 }
+
+
+async function scrapeChapterUrl(url) {
+  try {
+    const baseUrl = new URL(url).origin; // Extract the base URL from the full URL
+
+    // Make a GET request to the URL
+    const response = await axios.get(url);
+
+    // Load the HTML content into Cheerio
+    const $ = cheerio.load(response.data);
+
+    // Find the specific <div> with attribute data-filter-list
+    const divWithFilterList = $('div[data-filter-list]');
+
+    // Find all <a> elements within the div
+    const aElements = divWithFilterList.find('a');
+
+    // Create an array to store the href values with the host
+    const hrefArray = [];
+
+    // Iterate through the <a> elements and extract the href attributes
+    aElements.each((index, element) => {
+      const href = $(element).attr('href');
+      if (href) {
+        // Add the host (base URL) to the href values if they are relative
+        const completeHref = href.startsWith('http') ? href : baseUrl + href;
+        hrefArray.push(completeHref);
+      }
+    });
+
+    // Reverse the hrefArray
+    const reversedArray = hrefArray.reverse();
+
+    // Create a JSON object with the manga name, base URL, and the reversed href values
+    const jsonContent = {
+      mangaName: path.basename(url),
+      baseUrl: url,
+      reversedHrefValues: reversedArray,
+    };
+
+    // Convert the JSON object to a string
+    const jsonString = JSON.stringify(jsonContent, null, 2);
+
+    // Save the JSON to a file with the manga name as the filename
+    const fileName = path.basename(url) + '.json';
+    fs.writeFileSync(fileName, jsonString);
+
+    return fileName
+
+    console.log(`Reversed JSON data saved to ${fileName}`);
+  } catch (error) {
+    console.error('Error:', error);
+  }
+}
+
+
+async function scrapeImagesMangapill(url) {
+  try {
+    const folderName = "tmp/" + url.split('/').filter(Boolean).pop().replace(/^(\d+-)/, '');
+    // Make a GET request to the URL
+    const response = await axios.get(url);
+
+    // Load the HTML content into Cheerio
+    const $ = cheerio.load(response.data);
+
+    // Find the <div id="readerarea"> element
+    const readerArea = $('.relative.bg-card.flex.justify-center.items-center');
+
+    const imgElements = readerArea.find('img[data-src]');
+
+
+    // console.log(imgElements);
+
+
+    // Create a directory for the images
+    if (!fs.existsSync(folderName)) {
+      fs.mkdirSync(folderName);
+    }
+
+    // Create an array to store the image source URLs
+    const imgSrcArray = [];
+
+    // Loop through the img elements and collect the image source URLs
+    imgElements.each((index, element) => {
+      const imgSrc = $(element).attr('data-src');
+      imgSrcArray.push(imgSrc);
+    });
+
+    console.log(imgSrcArray);
+
+    for (let i = 0; i < imgSrcArray.length; i++) {
+      const imgSrc = imgSrcArray[i];
+
+      // Check if imgSrc is defined
+      if (imgSrc) {
+        const imgName = path.basename(imgSrc);
+        const imgPath = path.join(folderName, imgName);
+
+        // Define custom headers
+        const headers = {
+          'sec-ch-ua': '"Google Chrome";v="117", "Not;A=Brand";v="8", "Chromium";v="117"',
+          'Referer': 'https://www.mangapill.com/',
+          'DNT': '1',
+          'sec-ch-ua-mobile': '?0',
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36',
+          'sec-ch-ua-platform': '"Windows"',
+        };
+
+        // Download the image with custom headers
+        await axios({
+          method: 'get',
+          url: imgSrc,
+          responseType: 'stream',
+          headers: headers,
+        }).then((response) => {
+          response.data.pipe(fs.createWriteStream(imgPath));
+          console.log(`Downloaded: ${imgPath}`);
+        }).catch((error) => {
+          console.error(`Error downloading image: ${imgSrc}`);
+        });
+      }
+    }
+
+    return folderName;
+
+  } catch (error) {
+    console.error('Error:', error);
+  }
+}
+
+function getChapterUrls(startPoint, endPoint, urlsJson) {
+  try {
+    // Read the JSON file containing the URLs
+    console.log(urlsJson);
+
+    const jsonData = fs.readFileSync(urlsJson, 'utf-8');
+    const mangaUrls = JSON.parse(jsonData);
+
+    // Filter the URLs based on the specified range
+    const matchingUrls = mangaUrls.reversedHrefValues.filter((url) => {
+      const match = url.match(/-([0-9]+)$/);
+      if (match) {
+        const chapterNumber = parseInt(match[1]);
+        return chapterNumber >= startPoint && chapterNumber <= endPoint;
+      }
+      return false;
+    });
+
+    return matchingUrls; // Return the array of matching URLs
+  } catch (error) {
+    console.error('Error:', error);
+    return []; // Return an empty array in case of an error
+  }
+}
+
+
+
+
+async function processAllChapters(chapterUrls, ctx) {
+  try {
+    // Loop through the chapter URLs and process each one
+    for (const url of chapterUrls) {
+      try {
+        // Scrape images and create PDF for the current chapter
+        const folderName = await scrapeImagesMangapill(url);
+        const pdfPath = await createPdfFromImages(folderName);
+
+        // Send the generated PDF to the user for the current chapter
+        const pdfFileName = path.basename(pdfPath);
+        await ctx.replyWithDocument({ source: pdfPath }, { filename: pdfFileName });
+
+        // Clean up the temporary folder and PDF file for the current chapter
+        cleanup(folderName, pdfPath);
+
+        console.log(`Chapter processed successfully: ${url}`);
+      } catch (error) {
+        // Handle errors for the current chapter
+        console.error(`Error processing chapter ${url}:`, error);
+      }
+    }
+
+    console.log('All chapters processed successfully');
+  } catch (error) {
+    // Handle errors if needed
+    console.error('Error processing chapters:', error);
+  }
+}
+
+
