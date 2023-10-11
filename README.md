@@ -23,51 +23,36 @@
   </p>
 </p>
 
-## Features
+## FEATURES
 
-1. **Download Individual Manga/Manhwa Chapters**
-   - Use the `/dl` command followed by the chapter's URL or just send the chapter's URL to download specific chapters.
+- Download Individual or Multiple Manga/Manhwa Chapters
 
-2. **View and Download PDF Documents**
-   - Receive chapters in PDF format for easy reading on any device.
+- View and Manga/Manhwa Download as PDF Documents
+  
+- Supports Multiple Manga/Manhwa Sources
+  
+- Parallel Downloading
+  
+- Download multiple chapters in parallel to save time.
 
-3. **Supports Multiple Manga/Manhwa Series**
-   - Download chapters from a variety of manga and manhwa series available on AsuraScans.
 
-4. **Clean and Organized Downloads**
-   - Each series is saved in a separate folder for better organization.
+* **Available Manga sources:-**
 
-5. **Error Handling**
-   - Comprehensive error handling and user-friendly responses for better user experience.
+|                    SITE                    |   STATUS    |
+|:------------------------------------------:|:-----------:|
+|     [MangaPill](https://mangapill.com)     |   WORKING   |
 
-6. **Help Command**
-   - Use the `/help` command to view available commands and usage instructions.
+## Planned Stuff
 
-7. **Server Uptime Information**
-   - Access server uptime information via an Express API endpoint.
-
-8. **Parallel Downloading**
-   - Download multiple chapters in parallel to save time.
-
-9. **Manual Chapter Download**
-   - Use the `/mdl` command to manually specify the start and end chapters for download.
-
-10. **Dynamic URL Validation**
-    - Verify URLs for chapters to ensure they match the expected AsuraScans format.
-
-11. **Graceful Cleanup**
-    - Automatically clean up temporary files and folders after successful downloads.
-
-12. **Responsive User Experience**
-    - Get real-time feedback on download progress, errors, and completed tasks.
+- Adding More sources
+ 
 
 ## Usage
 
 1. Start a chat with the bot by mentioning `@AsuraScans_bot` on Telegram.
 
 2. Use the available commands to interact with the bot:
-   - `/dl {chapter_url}` or juat send the chapter_url: Download a specific chapter.
-   - `/mdl {chapter_url} | {start_chapter} -> {end_chapter}`: Download a range of chapters.
+   - `{chapter_url} | {start_chapter} -> {end_chapter}`: Download a range of chapters.
    - `/help`: View available commands and instructions.
 
 3. Wait for the bot to process your request, and it will provide you with the requested manga/manhwa chapters in PDF format.
