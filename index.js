@@ -6,7 +6,6 @@ const { PDFDocument, rgb } = require('pdf-lib');
 const sharp = require('sharp');
 const path = require('path');
 const express = require("express");
-// const pTimeout = require("p-timeout");
 
 // For uptime API to keep the bot alive
 const app = express();
@@ -37,7 +36,7 @@ bot.start((ctx) => {
 bot.help((ctx) => {
   ctx.reply(
     'Welcome to AsuraScans – Downloader!\n\n' +
-    '/dl {chapter_url} or just send the chapter_url: Download a specific chapter. \n\n/mdl {chapter_url} | {start_chapter} -> {end_chapter}: Download a range of chapters. \n\n/help: View available commands and instructions.'
+    '/dl {chapter_url} or just send the chapter_url: Download a specific chapter. \n{chapter_url} | {start_chapter} -> {end_chapter}: Download a range of chapters. \n\n/help: View available commands and instructions.'
   );
 });
 
@@ -46,12 +45,13 @@ bot.on('text', async (ctx) => {
   const messageText = ctx.message.text;
   const match = messageText.match(/(https:\/\/www\.mangapill\.com\/manga\/\d+\/[\w-]+) \| (\d+) -> (\d+)/);
 
+
   if (!match) {
     ctx.reply('Invalid command format. Please use "URL | startCh -> endCh".');
     return;
   }
 
-  const url = "https://misfitsdev.co/get.php?url=" + match[1];
+  const url = match[1];
   const startPoint = parseInt(match[2]);
   const endPoint = parseInt(match[3]);
 
@@ -88,7 +88,13 @@ bot.on('text', async (ctx) => {
   }
 });
 
+const folderPath = 'tmp';
+deleteAllFilesAndFoldersInFolder(folderPath);
+
 bot.launch();
+
+
+// ============================= functions ==========================
 
 async function scrapeImagesAsura(url) {
   try {
@@ -140,16 +146,25 @@ async function createPdfFromImages(folderName) {
     const pdfPath = folderName + '.pdf';
     const imageFiles = fs.readdirSync(folderName);
     const pdfDoc = await PDFDocument.create();
-    const pdfPages = [];
 
     for (const imageFile of imageFiles) {
       const imagePath = path.join(folderName, imageFile);
+      let imageExtension = path.extname(imageFile).toLowerCase();
 
       try {
         const { width: imageWidth, height: imageHeight } = await sharp(imagePath).metadata();
         const pdfPage = pdfDoc.addPage([imageWidth, imageHeight]);
         const image = await sharp(imagePath).toBuffer();
-        const imageXObject = await pdfDoc.embedJpg(image);
+
+        let imageXObject;
+        if (imageExtension === '.png') {
+          const pngImageBuffer = fs.readFileSync(imagePath); // Read the PNG image
+          imageXObject = await pdfDoc.embedPng(pngImageBuffer);
+        } else if (imageExtension === '.jpeg') {
+          imageXObject = await pdfDoc.embedJpg(image);
+        } else {
+          console.log("something error jpg png")
+        }
 
         pdfPage.drawImage(imageXObject, {
           x: 0,
@@ -197,6 +212,17 @@ async function cleanup(folderName, pdfPath) {
 async function scrapeChapterUrl(url) {
   try {
     const baseUrl = new URL(url).origin;
+
+    const folderPath = 'chapters';
+    const fileName = path.join(folderPath, path.basename(url) + '.json');
+
+    if (fs.existsSync(fileName)) {
+      console.log(`File ${fileName} already exists.`);
+      return fileName
+    } else {
+      console.log(`File ${fileName} does not exist. Proceed with file creation.`);
+    }
+
     const response = await axios.get(url);
     const $ = cheerio.load(response.data);
     const divWithFilterList = $('div[data-filter-list]');
@@ -219,7 +245,8 @@ async function scrapeChapterUrl(url) {
     };
 
     const jsonString = JSON.stringify(jsonContent, null, 2);
-    const fileName = path.basename(url) + '.json';
+    // const folderPath = 'chapters';
+    // const fileName = path.join(folderPath, path.basename(url) + '.json');
     fs.writeFileSync(fileName, jsonString);
     return fileName;
 
@@ -231,7 +258,7 @@ async function scrapeChapterUrl(url) {
 function getChapterUrls(startPoint, endPoint, urlsJson) {
   try {
     // Read the JSON file containing the URLs
-    const jsonData = fs.readFileSync('omniscient-reader.json', 'utf-8');
+    const jsonData = fs.readFileSync(urlsJson, 'utf-8');
     const mangaUrls = JSON.parse(jsonData);
 
     // Filter the URLs based on the specified range
@@ -317,9 +344,9 @@ async function scrapeImagesMangapill(url) {
   }
 }
 
-
 async function processAllChapters(chapterUrls, ctx) {
   try {
+
     for (const url of chapterUrls) {
       try {
         // const folderName = await scrapeImagesMangapill(url);
@@ -339,6 +366,24 @@ async function processAllChapters(chapterUrls, ctx) {
   } catch (error) {
     console.error('Error processing chapters:', error);
   }
+}
+
+// tmp folder cleaner
+function deleteAllFilesAndFoldersInFolder(folderPath) {
+  fs.readdirSync(folderPath).forEach((file) => {
+    const filePath = path.join(folderPath, file);
+
+    if (fs.statSync(filePath).isFile()) {
+      fs.unlinkSync(filePath);
+      console.log(`Deleted file: ${file}`);
+    } else if (fs.statSync(filePath).isDirectory()) {
+      // Recursively delete subdirectories and their contents
+      deleteAllFilesAndFoldersInFolder(filePath);
+      // After deleting the directory's contents, delete the directory itself
+      fs.rmdirSync(filePath);
+      console.log(`Deleted directory: ${file}`);
+    }
+  });
 }
 
 process.on('unhandledRejection', (reason, promise) => {
