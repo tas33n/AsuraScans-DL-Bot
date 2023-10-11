@@ -6,6 +6,7 @@ const { PDFDocument, rgb } = require('pdf-lib');
 const sharp = require('sharp');
 const path = require('path');
 const express = require("express");
+// const pTimeout = require("p-timeout");
 
 // For uptime API to keep the bot alive
 const app = express();
@@ -36,7 +37,7 @@ bot.start((ctx) => {
 bot.help((ctx) => {
   ctx.reply(
     'Welcome to AsuraScans – Downloader!\n\n' +
-    '/dl {chapter_url} or just send the chapter_url: Download a specific chapter. \n{chapter_url} | {start_chapter} -> {end_chapter}: Download a range of chapters. \n\n/help: View available commands and instructions.'
+    '/dl {chapter_url} or just send the chapter_url: Download a specific chapter. \n\n/mdl {chapter_url} | {start_chapter} -> {end_chapter}: Download a range of chapters. \n\n/help: View available commands and instructions.'
   );
 });
 
@@ -94,7 +95,6 @@ deleteAllFilesAndFoldersInFolder(folderPath);
 bot.launch();
 
 
-// ============================= functions ==========================
 
 async function scrapeImagesAsura(url) {
   try {
@@ -141,15 +141,45 @@ async function scrapeImagesAsura(url) {
   }
 }
 
+function getAllFilesInFolder(folderPath) {
+  const allFiles = [];
+
+  function traverseDirectory(currentPath) {
+    const files = fs.readdirSync(currentPath, { withFileTypes: true });
+
+    for (const file of files) {
+      const filePath = path.join(currentPath, file.name);
+      if (file.isFile()) {
+        allFiles.push(filePath);
+      } else if (file.isDirectory()) {
+        traverseDirectory(filePath);
+      }
+    }
+  }
+
+  traverseDirectory(folderPath);
+  return allFiles;
+}
+
+
 async function createPdfFromImages(folderName) {
   try {
     const pdfPath = folderName + '.pdf';
     const imageFiles = fs.readdirSync(folderName);
     const pdfDoc = await PDFDocument.create();
+    const pdfPages = [];
+
+    console.log('function imageFiles: ', imageFiles)
+
+    const allFiles = getAllFilesInFolder(folderPath);
+
+    console.log('All files:', allFiles);
 
     for (const imageFile of imageFiles) {
       const imagePath = path.join(folderName, imageFile);
       let imageExtension = path.extname(imageFile).toLowerCase();
+
+      console.log(imagePath);
 
       try {
         const { width: imageWidth, height: imageHeight } = await sharp(imagePath).metadata();
@@ -165,6 +195,9 @@ async function createPdfFromImages(folderName) {
         } else {
           console.log("something error jpg png")
         }
+
+        // console.log(imageXObject);
+
 
         pdfPage.drawImage(imageXObject, {
           x: 0,
@@ -344,6 +377,7 @@ async function scrapeImagesMangapill(url) {
   }
 }
 
+
 async function processAllChapters(chapterUrls, ctx) {
   try {
 
@@ -369,6 +403,7 @@ async function processAllChapters(chapterUrls, ctx) {
 }
 
 // tmp folder cleaner
+
 function deleteAllFilesAndFoldersInFolder(folderPath) {
   fs.readdirSync(folderPath).forEach((file) => {
     const filePath = path.join(folderPath, file);
@@ -385,6 +420,8 @@ function deleteAllFilesAndFoldersInFolder(folderPath) {
     }
   });
 }
+
+
 
 process.on('unhandledRejection', (reason, promise) => {
   console.error('Unhandled Rejection at:', promise, 'reason:', reason);
